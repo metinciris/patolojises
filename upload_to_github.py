@@ -1,11 +1,7 @@
-# yüklenmedi ise şunları yükleyin: 
-# yüklenmedi ise şunları cmd komut dosyası ile yükleyin: pip install gitpython
-# yüklenmedi ise şunları cmd komut ile yükleyin:  pip install tk
 import os
 import git
 import time
 import tkinter as tk
-from tkinter import simpledialog
 
 # Git uygulamasının yolunu belirtin
 os.environ['GIT_PYTHON_GIT_EXECUTABLE'] = r'C:\Program Files\Git\bin\git.exe'
@@ -14,13 +10,7 @@ os.environ['GIT_PYTHON_GIT_EXECUTABLE'] = r'C:\Program Files\Git\bin\git.exe'
 local_repo_path = 'C:/Users/user/Documents/ses'  # Yerel repo yolu
 remote_repo_url = 'https://github.com/metinciris/patolojises.git'  # Uzak repo URL'si
 project_folder = os.path.join(local_repo_path, 'project')  # Proje klasörü
-
-# Kullanıcı adı al
-root = tk.Tk()
-root.withdraw()
-user_id = simpledialog.askstring("Input", "Enter your user ID (2 characters):")
-if len(user_id) != 2:
-    raise ValueError("User ID must be exactly 2 characters long")
+user_id = 'mc'  # Kullanıcı ID'si
 
 # Kullanıcı klasörü
 user_folder = os.path.join(project_folder, user_id)
@@ -28,22 +18,36 @@ user_folder = os.path.join(project_folder, user_id)
 # GitHub deposunu mevcut yerel depo üzerinden kullan
 repo = git.Repo(local_repo_path)
 
-# Daha önce commit edilmiş dosyaların listesini al
-committed_files = [item.a_path for item in repo.index.diff('HEAD')]
+def get_remote_files():
+    remote_files = []
+    try:
+        repo.git.fetch()
+        temp_dir = os.path.join(local_repo_path, 'temp_clone')
+        if os.path.exists(temp_dir):
+            repo.git.clone(remote_repo_url, temp_dir)
+        remote_repo = git.Repo(temp_dir)
+        for item in remote_repo.tree().traverse():
+            if item.type == 'blob':
+                remote_files.append(item.path)
+        shutil.rmtree(temp_dir)
+    except Exception as e:
+        print(f"Failed to get remote files: {e}")
+    return remote_files
 
 def upload_files():
+    remote_files = get_remote_files()
     current_files = set()
     for subdir, dirs, files in os.walk(user_folder):
         for file in files:
-            current_files.add(os.path.relpath(os.path.join(subdir, file), local_repo_path))
-    new_files = [f for f in current_files if f not in committed_files]
+            relative_path = os.path.relpath(os.path.join(subdir, file), local_repo_path)
+            if relative_path not in remote_files:
+                current_files.add(relative_path)
 
-    if new_files:
-        print(f"Yeni dosyalar bulundu: {new_files}")
+    if current_files:
+        print(f"Yeni dosyalar bulundu: {current_files}")
         repo.git.add(all=True)
-        repo.index.commit(f"Yeni dosyalar eklendi: {new_files}")
+        repo.index.commit(f"Yeni dosyalar eklendi: {current_files}")
         repo.git.push("origin", "main")
-        committed_files.extend(new_files)
 
 # GUI kurulumu
 def start_upload():
@@ -52,7 +56,6 @@ def start_upload():
         upload_files()
         time.sleep(10)  # 10 saniyede bir kontrol et
 
-upload_button = tk.Button(root, text="Start Uploading", command=start_upload)
-upload_button.pack(pady=10)
-root.mainloop()
-
+root = tk.Tk()
+root.withdraw()
+start_upload()
