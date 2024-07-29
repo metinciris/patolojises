@@ -7,10 +7,13 @@ import time
 import tkinter as tk
 from tkinter import simpledialog
 
+# Git uygulamasının yolunu belirtin
+os.environ['GIT_PYTHON_GIT_EXECUTABLE'] = r'C:\Program Files\Git\bin\git.exe'
+
 # Ayarlar
-local_repo_path = os.path.abspath('.')  # Bulunduğunuz dizin
+local_repo_path = 'C:/Users/user/Documents/ses'  # Yerel repo yolu
 remote_repo_url = 'https://github.com/metinciris/patolojises.git'  # Uzak repo URL'si
-project_folder = 'project'  # Proje klasörü
+project_folder = os.path.join(local_repo_path, 'project')  # Proje klasörü
 
 # Kullanıcı adı al
 root = tk.Tk()
@@ -22,11 +25,8 @@ if len(user_id) != 2:
 # Kullanıcı klasörü
 user_folder = os.path.join(project_folder, user_id)
 
-# GitHub deposunu klonla veya mevcut depoyu kullan
-if not os.path.exists(local_repo_path):
-    repo = git.Repo.clone_from(remote_repo_url, local_repo_path)
-else:
-    repo = git.Repo(local_repo_path)
+# GitHub deposunu mevcut yerel depo üzerinden kullan
+repo = git.Repo(local_repo_path)
 
 # Daha önce commit edilmiş dosyaların listesini al
 committed_files = [item.a_path for item in repo.index.diff('HEAD')]
@@ -55,3 +55,4 @@ def start_upload():
 upload_button = tk.Button(root, text="Start Uploading", command=start_upload)
 upload_button.pack(pady=10)
 root.mainloop()
+
