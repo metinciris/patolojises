@@ -10,11 +10,7 @@ os.environ['GIT_PYTHON_GIT_EXECUTABLE'] = r'C:\Program Files\Git\bin\git.exe'
 # Ayarlar
 local_repo_path = 'C:/Users/user/Documents/ses'  # Yerel repo yolu
 remote_repo_url = 'https://github.com/metinciris/patolojises.git'  # Uzak repo URL'si
-project_folder = os.path.join(local_repo_path, 'project')  # Proje klasörü
-user_id = 'mc'  # Kullanıcı ID'si
-
-# Kullanıcı klasörü
-user_folder = os.path.join(project_folder, user_id)
+mc_folder = os.path.join(local_repo_path, 'project', 'mc')  # Yüklenecek mc klasörü
 
 # GitHub deposunu mevcut yerel depo üzerinden kullan
 repo = git.Repo(local_repo_path)
@@ -24,8 +20,9 @@ def get_remote_files():
     try:
         repo.git.fetch()
         temp_dir = os.path.join(local_repo_path, 'temp_clone')
-        if not os.path.exists(temp_dir):
-            repo.git.clone(remote_repo_url, temp_dir)
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+        repo.git.clone(remote_repo_url, temp_dir)
         remote_repo = git.Repo(temp_dir)
         for item in remote_repo.tree().traverse():
             if item.type == 'blob':
@@ -38,16 +35,16 @@ def get_remote_files():
 def upload_files():
     remote_files = get_remote_files()
     current_files = set()
-    for subdir, dirs, files in os.walk(user_folder):
+    for subdir, dirs, files in os.walk(mc_folder):
         for file in files:
-            relative_path = os.path.relpath(os.path.join(subdir, file), local_repo_path)
+            relative_path = os.path.relpath(os.path.join(subdir, file), mc_folder)
             if relative_path not in remote_files:
-                current_files.add(relative_path)
+                current_files.add(os.path.join('mc', relative_path))  # mc klasörüne göre yolu ayarla
 
     if current_files:
         print(f"Yeni dosyalar bulundu: {current_files}")
-        repo.git.add(all=True)
-        repo.index.commit(f"Yeni dosyalar eklendi: {current_files}")
+        repo.index.add([os.path.join('project', 'mc', file) for file in current_files])
+        repo.index.commit(f"Yeni dosyalar eklendi: {list(current_files)}")
         
         # Uzak depodan güncellemeleri çek ve birleştir
         try:
