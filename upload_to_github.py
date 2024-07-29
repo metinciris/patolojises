@@ -1,6 +1,7 @@
 import os
 import git
 import time
+import shutil
 import tkinter as tk
 
 # Git uygulamasının yolunu belirtin
@@ -23,7 +24,7 @@ def get_remote_files():
     try:
         repo.git.fetch()
         temp_dir = os.path.join(local_repo_path, 'temp_clone')
-        if os.path.exists(temp_dir):
+        if not os.path.exists(temp_dir):
             repo.git.clone(remote_repo_url, temp_dir)
         remote_repo = git.Repo(temp_dir)
         for item in remote_repo.tree().traverse():
@@ -47,7 +48,18 @@ def upload_files():
         print(f"Yeni dosyalar bulundu: {current_files}")
         repo.git.add(all=True)
         repo.index.commit(f"Yeni dosyalar eklendi: {current_files}")
-        repo.git.push("origin", "main")
+        
+        # Uzak depodan güncellemeleri çek ve birleştir
+        try:
+            repo.git.pull('origin', 'main', '--rebase')
+        except Exception as e:
+            print(f"Failed to pull remote changes: {e}")
+        
+        # Değişiklikleri uzak depoya gönder
+        try:
+            repo.git.push("origin", "main")
+        except Exception as e:
+            print(f"Failed to push changes: {e}")
 
 # GUI kurulumu
 def start_upload():
