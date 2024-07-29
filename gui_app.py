@@ -71,9 +71,9 @@ def save_recording():
     audio_path = os.path.join(audio_folder, filename)
     wavio.write(audio_path, np.concatenate(audio_data), samplerate, sampwidth=2)
     next_file_number += 1
-    log_transcription(filename)
+    log_transcription(filename, audio_path)
 
-def log_transcription(audio_filename):
+def log_transcription(audio_filename, audio_path):
     transcription_filename = os.path.splitext(audio_filename)[0] + ".txt"
     transcription_path = os.path.join(transcription_folder, transcription_filename)
     transcription_text = simpledialog.askstring("Input", f"Enter the transcription text for {audio_filename}:")
